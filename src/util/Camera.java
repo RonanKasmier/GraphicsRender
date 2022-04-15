@@ -1,7 +1,5 @@
 package util;
 
-import util.Math3D;
-
 import java.awt.image.BufferedImage;
 
 public class Camera {
@@ -22,13 +20,13 @@ public class Camera {
 
     public float[] project(float[] OB){
         if(Math3D.dotProduct(Math3D.addVectors(OB, Math3D.addVectors(position, PN, 1.0f), -1.0f), PN) < 0){//also a place to put a render distance conditional
-            return null;
+            return null; // when system is to be more completely implemented, this check will be done far before this function is called
         }
         //float[] AB = Math3D.addVectors(OB, position, -1.0f);
         //float[] NI = Math3D.addVectors(Math3D.scalarMult(AB, Math3D.magsquared(PN)/Math3D.dotProduct(PN, AB)), PN, -1.0f);
         //return new float[]{Math3D.dotProduct(NI, NH)/Math3D.magnitude(NH), Math3D.dotProduct(NI, NV)/Math3D.magnitude(NV), 0.0f};
         float[] PB = Math3D.addVectors(OB, position, -1.0f);
-        float[] I = Math3D.addVectors(Math3D.scalarMult(PB, Math3D.magsquared(PN)/Math3D.dotProduct(PN, PB)), position, 1.0f);
+        float[] I = Math3D.addVectors(Math3D.scalarMult(PB, Math3D.magsquared(PN)/ Math3D.dotProduct(PN, PB)), position, 1.0f);
         float[] NI = Math3D.addVectors(I, Math3D.addVectors(position, PN, 1f), -1f);
         return new float[]{Math3D.dotProduct(NI, NH)/*/Math3D.magnitude(NH)*/, Math3D.dotProduct(NI, NV)/*/Math3D.magnitude(NV)*/, 0.0f};
        /* float t = (Math3D.dotProduct(Math3D.addVectors(position, PN, 1f), PN) - Math3D.dotProduct(position, PN))/Math3D.dotProduct(Math3D.addVectors(OB, position, -1f), PN);

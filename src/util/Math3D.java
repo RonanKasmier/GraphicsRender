@@ -1,8 +1,8 @@
 package util;
 import java.lang.Math;
 
-public static class Math3D {
-    public static float dotProduct(float[] a, float[] b){
+public class Math3D {
+   public static float dotProduct(float[] a, float[] b){
         return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     }
     public static float[] crossProduct(float[] a, float[] b){
@@ -29,7 +29,7 @@ public static class Math3D {
         return A[0]*A[0] + A[1]*A[1] + A[2]*A[2];
     }
     
-    public static distanceBetweenSquared(float[] A, float[] B){
+    public static float distanceBetweenSquared(float[] A, float[] B){
         float d1 = B[0] - A[0];
         float d2 = B[1] - A[1];
         float d3 = B[2] - A[2];

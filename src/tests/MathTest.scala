@@ -1,8 +1,7 @@
 package tests
-import util._
-import tests.JFrameTest
-import util.{Camera, ImageMod, Math3D}
 
+import util.*
+import util.{Camera, ImageMod, Math3D}
 object MathTest {
 
   def main(args: Array[String]): Unit = {

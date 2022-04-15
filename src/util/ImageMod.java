@@ -1,6 +1,5 @@
 package util;
 import java.awt.image.BufferedImage;
-import util.Math3D;
 
 public class ImageMod {
     public static void fillRect(BufferedImage canvas, final int x, final int y, final int width, final int height, final int color){
