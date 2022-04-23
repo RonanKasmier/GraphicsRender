@@ -1,6 +1,7 @@
 package tests
 
-import util.{Camera, Function3D, ImageMod, Math3D}
+import primitives.{Camera, Mesh, Scene3D, Trigon}
+import util.{Function3D, ImageMod, Math3D, Objects3D}
 
 import java.awt.Graphics
 import java.awt.event.{KeyEvent, KeyListener}
@@ -17,12 +18,207 @@ object JFrameTest extends KeyListener {
 
   var img: BufferedImage = null
 
+  var scene1:Scene3D = null
+  var scene2: Scene3D = null
+  var activeScene: Scene3D = null
+
   def init(): Unit = {
     try {
       img = ImageIO.read(new File("ref/rosie stays warm.jpg"))
     } catch {
       case e: Exception => println("couldn't load img")
     }
+
+    var i: Int = 0
+    while(i < blank.length){
+      if(Math.random() > 0.994){
+        blank(i) = 255 << 16 | 255 << 8 | 255
+      }else{
+        blank(i) = 13 << 16 | 3 << 8 | 90
+      }
+      i+=1
+    }
+
+    scene1 = new Scene3D(){
+      override def initialize(): Array[Float] = {
+        activeCamera = new Camera()
+        functions = Array(
+          new Function3D { //convert to arc length parameterization
+            offset = Array(0, 0, -20)
+            a = Array(10, 0, 0)
+            override def function2D(s: Double): Array[Double] = {
+              Array(0.05*s, 100*s)
+            }
+
+            override def planeFunction(t: Double, u: Double): Array[Double] = {
+              Array(
+                /*10*Math.sin(t * Math.PI/180),
+                10*Math.cos(t * Math.PI/180) * Math.cos(u * Math.PI/180),
+                10*Math.cos(t * Math.PI/180) * Math.sin(u * Math.PI/180),*/
+                t,
+                2 * Math.cos(u),
+                2 * Math.sin(u),
+              )
+            }
+          }
+        )
+        Array(0)
+      }
+      override def update(): Array[Float] = {
+        for (f <- functions) {
+          //f.a = Array(Math.cos(angle).toFloat, Math.sin(angle).toFloat, 0)
+          f.a = Math3D.rotateAbout(f.a, Array(0, 1, 1.6f), 0.1)
+          //f.b = Array(-Math.sin(angle).toFloat, Math.cos(angle).toFloat, 0)
+          f.b = Math3D.rotateAbout(f.b, Array(0, 1, 1.6f), 0.1)
+          f.b = Math3D.rotateAbout(f.b, f.a, 0.1)
+          //f.c = Array(Math.sin(angle + Math.PI/2).toFloat, 0, Math.cos(angle + Math.PI/2).toFloat)
+          f.c = Math3D.rotateAbout(f.c, Array(0, 1, 1.6f), 0.1)
+          f.c = Math3D.rotateAbout(f.c, f.a, 0.1)
+
+          //f.offset = Array(5*Math.cos(angle).toFloat, 5*Math.sin(-angle).toFloat, -2)
+          //angle = angle + 0.1f
+          f.offset = Math3D.addVectors(f.offset, Math3D.scalarMult(f.a, 1 / Math3D.magnitude(f.a)), 1)
+        }
+        //activeCamera.position = functions(0).offset
+        //activeCamera.look(Math3D.addVectors(functions(0).offset, Math3D.addVectors(activeCamera.position, functions(0).a, 1), -1))
+        //activeCamera
+        Array(0)
+      }
+      override def render(canvas: BufferedImage): Array[Float] = {
+        canvas.setRGB(0, 0, canvas.getWidth(), canvas.getHeight(), blank, 0, canvas.getWidth())
+        try {
+          ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(Array(-20, 0, 10))), activeCamera.projectToCanvas(canvas, activeCamera.project(Array(20, 0, 10))), 255 << 16 | 255 << 8 | 255)
+        } catch {
+          case e: Exception =>
+        }
+        try {
+          ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(Array(0, -20, 10))), activeCamera.projectToCanvas(canvas, activeCamera.project(Array(0, 20, 10))), 255 << 16 | 255 << 8 | 255)
+        } catch {
+          case e: Exception =>
+        }
+        try {
+          ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(Array(0, 0, 15))), activeCamera.projectToCanvas(canvas, activeCamera.project(Array(0, 0, 5))), 255 << 16 | 255 << 8 | 255)
+        } catch {
+          case e: Exception =>
+        }
+
+        for(f <- functions) {
+
+          var points: List[Array[Float]] = List()
+          for (i <- -1000 to 1000) {
+            val j: Double = (i: Double) / 100
+            points = f.function2DtoPlane(j) :: points
+            /*try {
+                //TODO: calculate float[]s and order them into array or linked based on distance, then render through ordered structure
+          }catch{
+            case e: Exception =>
+          }*/
+          }
+
+          points = points.sortWith((i: Array[Float], j: Array[Float]) => {
+            Math3D.distanceBetweenSquared(activeCamera.position, i) > Math3D.distanceBetweenSquared(activeCamera.position, j)
+          })
+          /*points.foreach((i:Array[Float])=>{
+        print(Math3D.distanceBetweenSquared(cam.position, i) + ", ")
+        })
+        println()*/
+
+          var ColorC: Int = 0
+          for (i <- points) {
+            try {
+              val point: Array[Int] = activeCamera.projectToCanvas(canvas, activeCamera.project(i))
+              ImageMod.fillRect(canvas, point(0), point(1), 2, 2, 100 << 16 | ((500 - ColorC / 4) % 100) << 8 | (500 - ColorC / 4) % 255)
+            } catch {
+              case e: Exception =>
+            }
+
+            ColorC += 1
+          }
+          //things in the distance don't have to be ordered before they're rendered
+
+
+          try {
+            ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(f.offset)), activeCamera.projectToCanvas(canvas, activeCamera.project(Math3D.addVectors(f.offset, f.a, 1))), 255 << 16 | 0 << 8 | 0)
+          } catch {
+            case e: Exception =>
+          }
+          try {
+            ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(f.offset)), activeCamera.projectToCanvas(canvas, activeCamera.project(Math3D.addVectors(f.offset, f.b, 1))), 0 << 16 | 255 << 8 | 0)
+          } catch {
+            case e: Exception =>
+          }
+          try {
+            ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(f.offset)), activeCamera.projectToCanvas(canvas, activeCamera.project(Math3D.addVectors(f.offset, f.c, 1))), 0 << 16 | 0 << 8 | 255)
+          } catch {
+            case e: Exception =>
+          }
+        }
+
+        /*val c: Camera = new Camera()
+        c.look(functions(0).offset)
+        try {
+          ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(c.position)), activeCamera.projectToCanvas(canvas, activeCamera.project(Math3D.addVectors(c.position, Math3D.normalized(c.PN), 1))), 255 << 16 | 255 << 8 | 0)
+          ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(c.position)), activeCamera.projectToCanvas(canvas, activeCamera.project(Math3D.addVectors(c.position, c.NH, 1))), 0 << 16 | 255 << 8 | 255)
+          ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(c.position)), activeCamera.projectToCanvas(canvas, activeCamera.project(Math3D.addVectors(c.position, c.NV, 1))), 255 << 16 | 0 << 8 | 255)
+        }catch{
+          case e: Exception =>
+        }*/
+
+        Array(0)
+      }
+    }
+    scene2 = new Scene3D(){
+      this.activeCamera = new Camera()
+
+      this.functions = Array(
+        new Function3D(){
+          override def function2D(s: Double): Array[Double] = {Array()}
+
+          override def planeFunction(t: Double, u: Double): Array[Double] = {
+            Array(t, u, Math.sin(t)*Math.sin(t) + Math.cos(u)* Math.cos(u))
+          }
+        }
+      )
+      val meshes: Array[Mesh] = new Array(functions.length)
+      override def initialize(): Array[Float] = {
+        for(i <- 0 until meshes.length){
+          meshes(i) = new Mesh(functions(i), Array(0, 10), Array(0, 10), 0.1, 0.1)
+        }
+        Array(0)
+      }
+
+      override def update(): Array[Float] = {
+
+        Array(0)
+      }
+
+      override def render(canvas: BufferedImage): Array[Float] = {
+        canvas.setRGB(0, 0, canvas.getWidth(), canvas.getHeight(), blank, 0, canvas.getWidth())
+        try {
+          ImageMod.drawTriangle(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(mesh1.faces(0).A)),
+                                        activeCamera.projectToCanvas(canvas, activeCamera.project(mesh1.faces(0).B)),
+                                        activeCamera.projectToCanvas(canvas, activeCamera.project(mesh1.faces(0).C)),
+                                  255 << 16 | 255 << 8 | 255)
+        }catch{case e: Exception => }
+        for(mesh <- meshes){
+          for(tr <- mesh.faces){
+            try{
+              ImageMod.drawTriangle(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(tr.A)),
+                                            activeCamera.projectToCanvas(canvas, activeCamera.project(tr.B)),
+                                            activeCamera.projectToCanvas(canvas, activeCamera.project(tr.C)),
+                                      255 << 16 | 255 << 8 | 255, 3)
+              //draw normal vectors
+              /*ImageMod.drawQuickLine(canvas, activeCamera.projectToCanvas(canvas, activeCamera.project(tr.A)),
+                                              activeCamera.projectToCanvas(canvas, activeCamera.project(Math3D.addVectors(tr.A, tr.N, 1))),
+                                        255 << 16 | 255 << 8 | 0, 4)*/
+            }catch{case e: Exception =>}
+          }
+        }
+        Array(0)
+      }
+    }
+    activeScene = scene2
+    activeScene.initialize()
   }
 
   def main(args: Array[String]): Unit = {
@@ -44,22 +240,24 @@ object JFrameTest extends KeyListener {
         Thread.sleep(100)
       }
     }
+
   }
 
-  val cam: Camera = new Camera()
-  cam.position(0) = 0f
   val cubes: Array[Array[Array[Float]]] = Array(
-    util.Objects3D.createCube(1, 0, -1, 1),
-    util.Objects3D.createCube(5, 5, 1, 1),
+    Objects3D.createCube(1, 0, -1, 1),
+    Objects3D.createCube(5, 5, 1, 1),
     util.Objects3D.createCube(-2, 0, -1, 1),
     util.Objects3D.createCube(-5, 1, -1, 1))
   val boundingBox: Array[Array[Float]] = util.Objects3D.createCube(-15, -15, -15, 30)
   val point: Array[Float] = Array[Float](0f, 0f, 0f)
   val quad: Array[Array[Float]] = util.Objects3D.square3D(0, 0, 0, 5)
+  val mesh1: Mesh = new Mesh(Array(new Trigon(Array(-10, -9, -11), Array(-11, -11, -10), Array(-9, -8, -9))))
 
-  val f: Function3D = new Function3D { //convert to arc length parameterization
+  /*val f: Function3D = new Function3D { //convert to arc length parameterization
+    offset = Array(0, 0, -20)
+    a = Array(10, 0, 0)
     override def function2D(s: Double): Array[Double] = {
-      Array(s, s)
+      Array(0.01*s, 100*s)
     }
 
     override def planeFunction(t: Double, u: Double): Array[Double] = {
@@ -67,20 +265,21 @@ object JFrameTest extends KeyListener {
         /*10*Math.sin(t * Math.PI/180),
         10*Math.cos(t * Math.PI/180) * Math.cos(u * Math.PI/180),
         10*Math.cos(t * Math.PI/180) * Math.sin(u * Math.PI/180),*/
-        t * t,
-        5 * Math.cos(u),
-        5 * Math.sin(u),
+        t,
+        2 * Math.cos(u),
+        2 * Math.sin(u),
       )
     }
-  }
+  }*/
 
 
   var angle: Float = 0;
 
   def update(): Unit = {
+    activeScene.update()
     //cam.position(0)+=0.1f
     //println(cam.position(0))
-    canvas.setRGB(0, 0, canvas.getWidth(), canvas.getHeight(), blank, 0, canvas.getWidth())
+    /*canvas.setRGB(0, 0, canvas.getWidth(), canvas.getHeight(), blank, 0, canvas.getWidth())
 
     //draw axis
     try {
@@ -122,17 +321,41 @@ object JFrameTest extends KeyListener {
     for(i <- points){
       try {
         val point: Array[Int] = cam.projectToCanvas(canvas, cam.project(i))
-        ImageMod.fillRect(canvas, point(0), point(1), 2, 2, 255 << 16 | (255 - ColorC/4) << 8 | (255 - ColorC/4))
+        ImageMod.fillRect(canvas, point(0), point(1), 2, 2, 100 << 16 | ((500 - ColorC/4)%100) << 8 | (500 - ColorC/4)%255)
       }catch{case e: Exception =>}
 
       ColorC+=1
     }
     //things in the distance don't have to be ordered before they're rendered
 
-    //f.a = Array(Math.cos(angle).toFloat, Math.sin(angle).toFloat, 0)
-    //f.b = Array(Math.sin(angle).toFloat, Math.cos(angle).toFloat, 0)
+    try {
+      ImageMod.drawQuickLine(canvas, cam.projectToCanvas(canvas, cam.project(f.offset)), cam.projectToCanvas(canvas, cam.project(Math3D.addVectors(f.offset, f.a, 1))), 255 << 16 | 0 << 8 | 0)
+    } catch {
+      case e: Exception =>
+    }
+    try {
+      ImageMod.drawQuickLine(canvas, cam.projectToCanvas(canvas, cam.project(f.offset)), cam.projectToCanvas(canvas, cam.project(Math3D.addVectors(f.offset, f.b, 1))), 0 << 16 | 255 << 8 | 0)
+    } catch {
+      case e: Exception =>
+    }
+    try {
+      ImageMod.drawQuickLine(canvas, cam.projectToCanvas(canvas, cam.project(f.offset)), cam.projectToCanvas(canvas, cam.project(Math3D.addVectors(f.offset, f.c, 1))), 0 << 16 | 0 << 8 | 255)
+    } catch {
+      case e: Exception =>
+    }
 
-    //angle+=0.1f
+    //f.a = Array(Math.cos(angle).toFloat, Math.sin(angle).toFloat, 0)
+    f.a = Math3D.rotateAbout(f.a, Array(0, 1, 1.6f), 0.1)
+    //f.b = Array(-Math.sin(angle).toFloat, Math.cos(angle).toFloat, 0)
+    f.b = Math3D.rotateAbout(f.b, Array(0, 1, 1.6f), 0.1)
+    f.b = Math3D.rotateAbout(f.b, f.a, 0.1)
+    //f.c = Array(Math.sin(angle + Math.PI/2).toFloat, 0, Math.cos(angle + Math.PI/2).toFloat)
+    f.c = Math3D.rotateAbout(f.c, Array(0, 1, 1.6f), 0.1)
+    f.c = Math3D.rotateAbout(f.c, f.a, 0.1)
+
+    //f.offset = Array(Math.cos(angle).toFloat, Math.sin(-angle).toFloat, 0)
+    f.offset = Math3D.addVectors(f.offset, Math3D.scalarMult(f.a,10/Math3D.magnitude(f.a)), 1)
+    angle+=0.1f
 
     try {
       //ImageMod.drawImage(img, canvas, cam.projectToCanvas(canvas, cam.project(quad(0))), cam.projectToCanvas(canvas, cam.project(quad(1))), cam.projectToCanvas(canvas, cam.project(quad(2))), cam.projectToCanvas(canvas, cam.project(quad(3))))
@@ -172,7 +395,7 @@ object JFrameTest extends KeyListener {
           //printArray(n)
         }
       }
-    }
+    }*/
   }
 
   val canvas: BufferedImage = new BufferedImage(resolution(0), resolution(1), BufferedImage.TYPE_INT_RGB)
@@ -185,6 +408,7 @@ object JFrameTest extends KeyListener {
       return
     }
     val g: Graphics = bs.getDrawGraphics()
+    activeScene.render(canvas)
     g.drawImage(canvas, 0, 0, windowSize(0), windowSize(1), null)
     //g.setColor(Color.white)
     //g.drawRect(cam.position(0).toInt - 2 + 50, cam.position(1).toInt - 2 + 50, 4, 4)
@@ -207,6 +431,7 @@ object JFrameTest extends KeyListener {
 
   override def keyPressed(e: KeyEvent): Unit = {
     //println(e)
+    val cam:Camera = activeScene.activeCamera
     if (e.getKeyCode == 87) {
       cam.position = Math3D.addVectors(cam.position, Math3D.scalarMult(cam.getLooking(), 1), 1f)
     }

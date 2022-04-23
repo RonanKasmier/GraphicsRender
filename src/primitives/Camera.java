@@ -1,4 +1,7 @@
-package util;
+package primitives;
+
+import tests.JFrameTest;
+import util.Math3D;
 
 import java.awt.image.BufferedImage;
 
@@ -12,7 +15,7 @@ public class Camera {
 
     final float[] i = {1, 0 ,0};
     final float[] j = {0, 1 ,0};
-    final float[] k = {0, 0 ,1};
+    final float[] k = {0, 0 ,1}; //i j and k will be relative to camera/other thing camera is attatched to
 
     public Camera(){
         position = new float[]{0, 0, 0};
@@ -64,7 +67,11 @@ public class Camera {
         return Math3D.scalarMult(PN, 1f/PN_Length);
     }
     
-    public void look(float[] point){
+    public void look(float[] direction){
+        float[] dir = Math3D.normalized(direction);
+        NH = Math3D.normalized(Math3D.crossProduct(PN, dir));
+        PN = Math3D.scalarMult(dir, PN_Length);
+        NV = Math3D.normalized(Math3D.crossProduct(dir, NH));
         
     }
 }

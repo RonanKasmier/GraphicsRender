@@ -25,16 +25,21 @@ object ImageTest extends MouseMotionListener{
     init()
 
     var t: Long = 0
-    while(t < 10){
+    var sart: Long = System.nanoTime()
+    while(t < 100000){
       update()
       render(j)
       t+=1;
+      println(1f/((System.nanoTime() - sart)/1_000_000_000.toDouble))
+      sart = System.nanoTime()
     }
+    println(1f/((System.nanoTime() - sart)/1_000_000_000.toDouble))
     println("done")
   }
 
-  val canvas: BufferedImage = new BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB)
-  val blank: Array[Int] = new Array[Int](400 * 400)
+  val canvas: BufferedImage = new BufferedImage(256/1, 224/1, BufferedImage.TYPE_INT_RGB)
+  val blank: Array[Int] = new Array[Int](256*224/1)
+  //val pixels: Array[Int] = canvas.getRGB(0, 0, 400, 400, null, 0, 400)
 
   var img: BufferedImage = null
 
@@ -54,9 +59,14 @@ object ImageTest extends MouseMotionListener{
   }
 
   def update(): Unit ={
-    canvas.setRGB(0, 0, 400, 400, blank, 0, 400)
+    canvas.setRGB(0, 0, 256/1, 224/1, blank, 0, 256/1)
     //ImageMod.drawImage(img, canvas, 0, 0, 400, 400)
     ImageMod.drawImage(img, canvas, canvas_corners(0), canvas_corners(1), canvas_corners(2), canvas_corners(3))
+    for(i <- 0 until 1) {
+      ImageMod.fillTriangle(canvas, Array[Int](75, 300), Array[Int](400, 350), mousePos, 0 << 16 | 0 << 8 | 0, 0.7f)
+      //ImageMod.drawImage(img, canvas, canvas_corners(0), canvas_corners(1), canvas_corners(2), mousePos)
+    }
+
   }
 
   def render(j: JFrame): Unit ={
@@ -66,7 +76,9 @@ object ImageTest extends MouseMotionListener{
       return
     }
     val g: Graphics = bs.getDrawGraphics()
+    //canvas.setRGB(0, 0, 400, 400, pixels, 0, 400);
     g.drawImage(canvas, 0, 0, 400, 400, null)
+
     bs.show()
   }
 
@@ -78,7 +90,7 @@ object ImageTest extends MouseMotionListener{
   var mousePos: Array[Int] = Array(400, 400)
   @Override
   def mouseMoved(e: MouseEvent): Unit = {
-    mousePos(0) = e.getX
-    mousePos(1) = e.getY
+    mousePos(0) = (e.getX * 256/400f).toInt
+    mousePos(1) = (e.getY*224/400f).toInt
   }
 }

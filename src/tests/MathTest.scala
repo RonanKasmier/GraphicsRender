@@ -1,7 +1,8 @@
 package tests
 
+import primitives.Camera
 import util.*
-import util.{Camera, ImageMod, Math3D}
+import util.{ImageMod, Math3D}
 object MathTest {
 
   def main(args: Array[String]): Unit = {

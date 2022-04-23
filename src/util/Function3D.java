@@ -6,6 +6,8 @@ public abstract class Function3D {
     public float[] b = {0, 1, 0};
     public float[] c = {0, 0, 1};
 
+    public float[] offset = {0, 0, 0};
+
 
     public abstract double[] function2D(double s); //return in form <t, u>
 
@@ -14,7 +16,12 @@ public abstract class Function3D {
     public float[] function2DtoPlane(double s){
         double[] v = function2D(s);
         double[] P = planeFunction(v[0], v[1]);
-        return Math3D.addVectors(Math3D.addVectors(Math3D.scalarMult(a, (float)P[0]), Math3D.scalarMult(b, (float)P[1]), 1), Math3D.scalarMult(c, (float)P[2]), 1);
+        return Math3D.addVectors(offset, Math3D.addVectors(Math3D.addVectors(Math3D.scalarMult(a, (float)P[0]), Math3D.scalarMult(b, (float)P[1]), 1), Math3D.scalarMult(c, (float)P[2]), 1), 1);
+    }
+    public float[] planeFunctiontoPlane(double t, double u){
+        double[] P = planeFunction(t, u);
+        return Math3D.addVectors(offset, Math3D.addVectors(Math3D.addVectors(Math3D.scalarMult(a, (float)P[0]), Math3D.scalarMult(b, (float)P[1]), 1), Math3D.scalarMult(c, (float)P[2]), 1), 1);
+
     }
     /*public void setAxis(double[] a, double[] b, double[] c){
 

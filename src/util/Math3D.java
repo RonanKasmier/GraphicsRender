@@ -1,4 +1,5 @@
 package util;
+
 import java.lang.Math;
 
 public class Math3D {
@@ -27,6 +28,14 @@ public class Math3D {
 
     public static float magsquared(float[] A){
         return A[0]*A[0] + A[1]*A[1] + A[2]*A[2];
+    }
+
+    public static float[] normalized(float[] A){
+       float mag = Math3D.magnitude(A);
+       if(mag == 0){
+           return null;
+       }
+       return scalarMult(A, 1f/mag);
     }
     
     public static float distanceBetweenSquared(float[] A, float[] B){
