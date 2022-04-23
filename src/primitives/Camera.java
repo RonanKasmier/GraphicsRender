@@ -1,4 +1,7 @@
-package util;
+package primitives;
+
+import tests.JFrameTest;
+import util.Math3D;
 
 import java.awt.image.BufferedImage;
 
@@ -12,14 +15,15 @@ public class Camera {
 
     final float[] i = {1, 0 ,0};
     final float[] j = {0, 1 ,0};
-    final float[] k = {0, 0 ,1};
+    final float[] k = {0, 0 ,1}; //i j and k will be relative to camera/other thing camera is attatched to
 
     public Camera(){
         position = new float[]{0, 0, 0};
     }
 
     public float[] project(float[] OB){
-        if(Math3D.dotProduct(Math3D.addVectors(OB, Math3D.addVectors(position, PN, 1.0f), -1.0f), PN) < 0){//also a place to put a render distance conditional
+        float[] NB = Math3D.addVectors(OB, Math3D.addVectors(position, PN, 1.0f), -1.0f);
+        if(Math3D.dotProduct(NB, PN)/(Math3D.magnitude(NB)*Math3D.magnitude(PN)) < 0.5){//also a place to put a render distance conditional
             return null; // when system is to be more completely implemented, this check will be done far before this function is called
         }
         //float[] AB = Math3D.addVectors(OB, position, -1.0f);
@@ -64,7 +68,11 @@ public class Camera {
         return Math3D.scalarMult(PN, 1f/PN_Length);
     }
     
-    public void look(float[] point){
+    public void look(float[] direction){
+        float[] dir = Math3D.normalized(direction);
+        NH = Math3D.normalized(Math3D.crossProduct(PN, dir));
+        PN = Math3D.scalarMult(dir, PN_Length);
+        NV = Math3D.normalized(Math3D.crossProduct(dir, NH));
         
     }
 }
